@@ -66,7 +66,7 @@
 
                 function activeSplitEmailByComma(stringRaw)
                 {
-                    var name_email_pattern = /".*"\s+<[a-zA-Z0-9!#$%&'*+\-=?^_`{|}~@\.\[\],"]+@[a-zA-Z0-9_\-\.]+>/g;
+                    var name_email_pattern = /".*"\s*<[a-zA-Z0-9!#$%&'*+\-=?^_`{|}~@\.\[\],"]+@[a-zA-Z0-9_\-\.]+>/g;
                     var email_pattern = /<*[a-zA-Z0-9!#$%&'*+\-=?^_`{|}~@\.\[\],"]+@[a-zA-Z0-9_\-\.]+>*/g;
 
                     if( stringRaw == undefined || typeof(stringRaw) != 'string') {
@@ -87,7 +87,7 @@
                                     if (match_array == null) {
                                         for (var j = i + 1; j < string_splitted_by_comma.length; j++) {
                                             var string_to_process = '';
-                                            for (var k = i; k < j; k++) {
+                                            for (var k = i; k <= j; k++) {
                                                 if (string_to_process == '') {
                                                     string_to_process = string_to_process.concat(string_splitted_by_comma[k]);
                                                 } else {
@@ -96,7 +96,7 @@
                                             }
                                             match_array = string_to_process.match(name_email_pattern);
                                             if (match_array != null) {
-                                                i = j;
+                                                i = j + 1;
                                                 for (var k = 0; k < match_array.length; k++) {
                                                     name_email_list.push(match_array[k]);
                                                 }
