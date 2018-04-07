@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+    <body>
+        <input type='button' value='test' onclick='test()'/>
+        <script>
+            var input_list = [
+                // '"first, <test@example.com>, "test", last" <test1@example.com>, test2@example.com',
+                // '"first, <test@example.com>, last" <test1@example.com>, test2@example.com',
+                // '"user1,user2"@example.com',
+                // '"first, <test@example.com>, "test", last" <"test"1@example.com>, "user1,user2"@example.com',
+                '"test, atmail" <testatmail@twofive25.com>, testatmail@twofive25.com, "testatmail0000001@twofive25.com" <testatmail0000001@twofive25.com>, "test, atmail, 0000002" <testatmail0000002@twofive25.com>, test,atmail@twofive25.com',
+                '"first, <test@example.com>, \'test\', last" <test1@example.com>, user1,user2@example.com, user1,user2,user3@twofive25.com',
+                '"user1@twofive.xyz <kase@twofive25.com>" <kase@twofive25.com>',
+                '"first, <test@example.com>, last" <test@example.com>',
+                '"test, atmail" <testatmail@twofive25.com>, "test, atmail, 1" <testatmail0000001@twofive25.com>, "test, atmail, 2" <testatmail0000002@twofive25.com>, testatmail <testatmail0000003@twofive25.com>',
+                '"first, <test@example.com>, last" <test@example.com>, test@example.com',
+                '"加瀬,正樹" <user4@twofive.xyz>, test@example.com',
+            ];
+
+            function test() {
+                for (var i = 0; i < input_list.length; i++) {
+                    console.log(activeSplitEmailByComma(input_list[i]));
+                }
+            }
+
+            function activeSplitEmailByComma(stringRaw)
+            {
+                var name_email_pattern = /".*"\s+<[a-zA-Z0-9!#$%&'*+\-=?^_`{|}~@\.\[\],]+@[a-zA-Z0-9_\-\.]+>/g;
+                var email_pattern = /<*[a-zA-Z0-9!#$%&'*+\-=?^_`{|}~@\.\[\],]+@[a-zA-Z0-9_\-\.]+>*/g;
+
+                if( stringRaw == undefined || typeof(stringRaw) != 'string') {
+                    return new Array('');
+                } else if (stringRaw == '') {
+                    return Array('');
+                } else {
+                    var name_email_list = []; // List contains elements in format "xxx" <yyy@zzz>
+                    // Split by comma
+                    string_splitted_by_comma = stringRaw.split(',');
+                    if (string_splitted_by_comma.length > 0) {
+                        // We're going to find all parts in format "xxx" <yyy@zzz>
+                        // If the raw string is not in that format, we will skip
+                        if (stringRaw.match(name_email_pattern) != null) {
+                            var i = 0;
+                            while (i < string_splitted_by_comma.length) {
+                                string_to_process = '';
+                                for (var j = 0; j < string_splitted_by_comma.length; j++) {
+                                    if (j > i) {
+                                        for (var k = i; k <= j; k++) {
+                                            if (string_to_process == '') {
+                                                string_to_process = string_to_process + string_splitted_by_comma[k];
+                                            } else {
+                                                string_to_process = string_to_process + ',' + string_splitted_by_comma[k];
+                                            }
+                                        }
+                                        var match_array = string_to_process.match(name_email_pattern);
+                                        if (match_array != null) {
+                                            for (var k = 0; k < match_array.length; k++) {
+                                                name_email_list.push(match_array[k]);
+                                            }
+                                            // We go to next element to process
+                                            // Otherwise the string will contain a part of string processed
+                                            i = j + 1;
+                                            string_to_process = '';
+                                            break;
+                                        } else {
+                                            if (i == (string_splitted_by_comma.length - 1)) {
+                                                // We don't want to continue processing
+                                                // because there is not anything remaining
+                                                i = i + 1;
+                                                break;
+                                            }
+                                            if (j == (string_splitted_by_comma.length - 1)) {
+                                                // We go to the last text combined but there is not match
+                                                i = j + 1;
+                                                break;
+                                            }
+                                            string_to_process = '';
+                                        }
+                                    } else if (i == j) {
+                                        string_to_process = string_splitted_by_comma[i];
+                                        var match_array = string_to_process.match(name_email_pattern);
+                                        if (match_array != null) {
+                                            for (var k = 0; k < match_array.length; k++) {
+                                                name_email_list.push(match_array[k]);
+                                            }
+                                            // We go to next element to process
+                                            i = i + 1;
+                                            string_to_process = '';
+                                            break;
+                                        } else {
+                                            if (i == (string_splitted_by_comma.length - 1)) {
+                                                // We don't want to continue processing
+                                                // because there is not anything remaining
+                                                i = i + 1;
+                                                break;
+                                            }
+                                            string_to_process = '';
+                                        }
+                                    } else {
+                                        continue;
+                                    }
+                                }
+                            }
+                        }
+                    
+                        // We expect that the list containing display name and email address above
+                        // is correct so we will remove them from input string to continue extracting
+                        // email addresses
+                        var string_to_process = stringRaw;
+                        for (var i = 0; i < name_email_list.length; i++) {
+                            string_to_process = string_to_process.replace(name_email_list[i], '');
+                        }
+                    
+                        // Extract remaining email addresses which do not go with display name
+                        var email_list = string_to_process.match(email_pattern);
+                        var email_list_no_duplicate = [];
+                        if (email_list != null) {
+                            for (var i = 0; i < email_list.length; i++) {
+                                var record = email_list[i].trim();
+                                if (record.indexOf('<') == 0 && record.lastIndexOf('>') == (record.length - 1)) {
+                                    email_list_no_duplicate.push(record.substring(1, record.length - 1));
+                                } else {
+                                    email_list_no_duplicate.push(record);
+                                }
+                            }
+                        }
+                    
+                        // Combine two lists to get the final list
+                        // TODO: With this method, order of email list won't be kept
+                        return name_email_list.concat(email_list_no_duplicate);
+                    }
+                }
+            }
+        </script>
+    </body>
+</html> 
