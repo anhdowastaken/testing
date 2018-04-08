@@ -41,6 +41,13 @@
                     '<"softest."@nifty.com>',
                     '<"sof..test"@nifty.com>',
                     '<"user1,user2"@twofive.xyz>',
+                    '<test,1@example1.com>,test,2@example2.com',
+                    '<test,1@example1.com>,test,2@example2.com,test,3@example3.com',
+                    'test,1@example1.com,test,2@example2.com',
+                    'test,1@example1.com, test,2@example2.com',
+                    '""test, 2" <test2@example2.com>" <test1@example1.com>',
+                    'test@example.com,""test, 2" <test2@example2.com>" <test1@example1.com>',
+                    '',
                 ];
 
                 var input_string = ''
@@ -122,12 +129,11 @@
                     } else if (stringRaw == '') {
                         return Array('');
                     } else {
-                        // Find "display-name" <local-part@domain-part>
-                        var name_email_list = [];
-
                         // Split by comma first
                         string_splitted_by_comma = stringRaw.split(',');
                         if (string_splitted_by_comma.length > 0) {
+                            // Find "display-name" <local-part@domain-part>
+                            var name_email_list = [];
                             // We're going to find all parts in format "xxx" <yyy@zzz>
                             // If the raw string is not in that format, we will skip
                             if (stringRaw.match(name_email_pattern) != null) {
@@ -171,10 +177,39 @@
 
                             // Remove enclosed email list from input string to continue extracting email address
                             string_to_process = removeStringAndFollowingComma(string_to_process, enclosed_email_list);
-                            // Find local-part@domain-part
-                            var email_list = string_to_process.match(email_pattern);
-                            if (email_list == null) {
-                                email_list = [];
+                            // Find "display-name" <local-part@domain-part>
+                            var email_list = [];
+                            // Split by comma first
+                            string_splitted_by_comma = string_to_process.split(',');
+                            if (string_splitted_by_comma.length > 0) {
+                                if (string_to_process.match(email_pattern) != null) {
+                                    for (var i = 0; i < string_splitted_by_comma.length; i++) {
+                                        var match_array = string_splitted_by_comma[i].match(email_pattern);
+                                        if (match_array == null) {
+                                            for (var j = i + 1; j < string_splitted_by_comma.length; j++) {
+                                                var string_to_process = '';
+                                                for (var k = i; k <= j; k++) {
+                                                    if (string_to_process == '') {
+                                                        string_to_process = string_to_process.concat(string_splitted_by_comma[k]);
+                                                    } else {
+                                                        string_to_process = string_to_process.concat(',').concat(string_splitted_by_comma[k]);
+                                                    }
+                                                }
+                                                match_array = string_to_process.match(email_pattern);
+                                                if (match_array != null) {
+                                                    i = j + 1;
+                                                    for (var k = 0; k < match_array.length; k++) {
+                                                        email_list.push(match_array[k]);
+                                                    }
+                                                }
+                                            }
+                                        } else {
+                                            for (var k = 0; k < match_array.length; k++) {
+                                                email_list.push(match_array[k]);
+                                            }
+                                        }
+                                    }
+                                }
                             }
 
                             // Remove '<' and '>' in enclosed email
