@@ -119,6 +119,43 @@
                     return string_to_process;
                 }
 
+                function findStringSeparatedByCommaByPattern(raw_string, pattern) {
+                    var return_list = [];
+                    // Split by comma first
+                    string_splitted_by_comma = raw_string.split(',');
+                    if (string_splitted_by_comma.length > 0) {
+                        if (raw_string.match(pattern) != null) {
+                            for (var i = 0; i < string_splitted_by_comma.length; i++) {
+                                var match_array = string_splitted_by_comma[i].match(pattern);
+                                if (match_array == null) {
+                                    for (var j = i + 1; j < string_splitted_by_comma.length; j++) {
+                                        var string_to_process = '';
+                                        for (var k = i; k <= j; k++) {
+                                            if (k == i) {
+                                                string_to_process = string_to_process.concat(string_splitted_by_comma[k]);
+                                            } else {
+                                                string_to_process = string_to_process.concat(',').concat(string_splitted_by_comma[k]);
+                                            }
+                                        }
+                                        match_array = string_to_process.match(pattern);
+                                        if (match_array != null) {
+                                            i = j + 1;
+                                            for (var k = 0; k < match_array.length; k++) {
+                                                return_list.push(match_array[k]);
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    for (var k = 0; k < match_array.length; k++) {
+                                        return_list.push(match_array[k]);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    return return_list;
+                }
+
                 function activeSplitEmailByComma(stringRaw)
                 {
                     var name_email_pattern = /".*"\s*<[a-zA-Z0-9!#$%&'*+\-=?^_`{|}~@\.\[\],"]+@[a-zA-Z0-9_\-\.]+>/g;
@@ -134,37 +171,7 @@
                         string_splitted_by_comma = stringRaw.split(',');
                         if (string_splitted_by_comma.length > 0) {
                             // Find "display-name" <local-part@domain-part>
-                            var name_email_list = [];
-                            // We're going to find all parts in format "xxx" <yyy@zzz>
-                            // If the raw string is not in that format, we will skip
-                            if (stringRaw.match(name_email_pattern) != null) {
-                                for (var i = 0; i < string_splitted_by_comma.length; i++) {
-                                    var match_array = string_splitted_by_comma[i].match(name_email_pattern);
-                                    if (match_array == null) {
-                                        for (var j = i + 1; j < string_splitted_by_comma.length; j++) {
-                                            var string_to_process = '';
-                                            for (var k = i; k <= j; k++) {
-                                                if (k == i) {
-                                                    string_to_process = string_to_process.concat(string_splitted_by_comma[k]);
-                                                } else {
-                                                    string_to_process = string_to_process.concat(',').concat(string_splitted_by_comma[k]);
-                                                }
-                                            }
-                                            match_array = string_to_process.match(name_email_pattern);
-                                            if (match_array != null) {
-                                                i = j + 1;
-                                                for (var k = 0; k < match_array.length; k++) {
-                                                    name_email_list.push(match_array[k]);
-                                                }
-                                            }
-                                        }
-                                    } else {
-                                        for (var k = 0; k < match_array.length; k++) {
-                                            name_email_list.push(match_array[k]);
-                                        }
-                                    }
-                                }
-                            }
+                            var name_email_list = findStringSeparatedByCommaByPattern(stringRaw, name_email_pattern);
 
                             // FIXME: We expect that the list containing display name and email address above
                             // is correct so we will remove them from input string to continue extracting
@@ -178,40 +185,8 @@
 
                             // Remove enclosed email list from input string to continue extracting email address
                             string_to_process = removeStringAndFollowingComma(string_to_process, enclosed_email_list);
-                            // Find "display-name" <local-part@domain-part>
-                            var email_list = [];
-                            // Split by comma first
-                            string_splitted_by_comma = string_to_process.split(',');
-                            if (string_splitted_by_comma.length > 0) {
-                                if (string_to_process.match(email_pattern) != null) {
-                                    for (var i = 0; i < string_splitted_by_comma.length; i++) {
-                                        var match_array = string_splitted_by_comma[i].match(email_pattern);
-                                        if (match_array == null) {
-                                            for (var j = i + 1; j < string_splitted_by_comma.length; j++) {
-                                                var string_to_process = '';
-                                                for (var k = i; k <= j; k++) {
-                                                    if (k == i) {
-                                                        string_to_process = string_to_process.concat(string_splitted_by_comma[k]);
-                                                    } else {
-                                                        string_to_process = string_to_process.concat(',').concat(string_splitted_by_comma[k]);
-                                                    }
-                                                }
-                                                match_array = string_to_process.match(email_pattern);
-                                                if (match_array != null) {
-                                                    i = j + 1;
-                                                    for (var k = 0; k < match_array.length; k++) {
-                                                        email_list.push(match_array[k]);
-                                                    }
-                                                }
-                                            }
-                                        } else {
-                                            for (var k = 0; k < match_array.length; k++) {
-                                                email_list.push(match_array[k]);
-                                            }
-                                        }
-                                    }
-                                }
-                            }
+                            // Find local-part@domain-part
+                            var email_list = findStringSeparatedByCommaByPattern(string_to_process, email_pattern);
 
                             // Remove '<' and '>' in enclosed email
                             for (var i = 0; i < enclosed_email_list.length; i++) {
