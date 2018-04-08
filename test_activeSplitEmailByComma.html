@@ -29,6 +29,18 @@
                     '"user1,user2"@example.com',
                     '"first, <test@example.com>, "test", last" <"test"1@example.com>, "user1,user2"@example.com',
                     'user1@example.com',
+                    '"test, atmail" <testatmail@twofive25.com>,testatmail@twofive25.com,"testatmail0000001@twofive25.com" <testatmail0000001@twofive25.com>,"test, atmail, 0000002" <testatmail0000002@twofive25.com>,test,atmail@twofive25.com',
+                    '"first, <test@example.com>, \'test\', last" <test1@example.com>, user1,user2@example.com, user1,user2,user3@twofive25.com',
+                    '<user1@twofive.xyz>,<user2@twofive.xyz>,user3@twofive.xyz',
+                    '"TwoFive,Inc." <softest@nifty.com>,"TwoFive,Inc."<softest@nifty.com>',
+                    '"TwoFive, Inc." <softest@nifty.com>,"TwoFive, Inc."<softest@nifty.com>',
+                    '"Two,Five,Inc." <softest@nifty.com>,"Two,Five,Inc."<softest@nifty.com>',
+                    '"Masaki Kase <kase@twofive25.com>" <softest@nifty.com>,"Masaki Kase <kase@twofive25.com>"<softest@nifty.com>',
+                    '"Masaki Kase<kase@twofive25.com>" <softest@nifty.com>,"Masaki Kase<kase@twofive25.com>"<softest@nifty.com>',
+                    '<"softest"@nifty.com>',
+                    '<"softest."@nifty.com>',
+                    '<"sof..test"@nifty.com>',
+                    '<"user1,user2"@twofive.xyz>',
                 ];
 
                 var input_string = ''
@@ -64,19 +76,56 @@
                     return false;
                 });
 
+                String.prototype.replaceAt=function(index, replacement) {
+                    return this.substr(0, index) + replacement+ this.substr(index + replacement.length);
+                }
+
+                function removeStringAndFollowingComma(raw_string, string_list) {
+                    var string_to_process = raw_string;
+                    for (var i = 0; i < string_list.length; i++) {
+                        var string_to_process_first_part = '';
+                        var string_to_process_second_part = '';
+
+                        string_to_process_first_part = string_to_process.substring(
+                                                            0,
+                                                            string_to_process.indexOf(string_list[i])
+                                                       );
+
+                        var start_of_second_part = string_to_process.indexOf(string_list[i]) + string_list[i].length;
+                        for (var j = start_of_second_part; j < string_to_process.length; j++) {
+                            if (string_to_process[j] == ' ') {
+                                continue;
+                            } else if (string_to_process[j] == ',') {
+                                string_to_process = string_to_process.replaceAt(j, ' ');
+                                start_of_second_part = j;
+                                break;
+                            } else {
+                                // TODO: If we're here that means there is something wrong
+                                // with code or input string
+                            }
+                        }
+                        string_to_process_second_part = string_to_process.substring(start_of_second_part, string_to_process.length);
+
+                        string_to_process = string_to_process_first_part.concat(string_to_process_second_part);
+                    }
+                    return string_to_process;
+                }
+
                 function activeSplitEmailByComma(stringRaw)
                 {
                     var name_email_pattern = /".*"\s*<[a-zA-Z0-9!#$%&'*+\-=?^_`{|}~@\.\[\],"]+@[a-zA-Z0-9_\-\.]+>/g;
-                    var email_pattern = /<*[a-zA-Z0-9!#$%&'*+\-=?^_`{|}~@\.\[\],"]+@[a-zA-Z0-9_\-\.]+>*/g;
+                    var enclosed_email_pattern = /<[a-zA-Z0-9!#$%&'*+\-=?^_`{|}~@\.\[\],"]+@[a-zA-Z0-9_\-\.]+>/g;
+                    var email_pattern = /[a-zA-Z0-9!#$%&'*+\-=?^_`{|}~@\.\[\],"]+@[a-zA-Z0-9_\-\.]+/g;
 
                     if( stringRaw == undefined || typeof(stringRaw) != 'string') {
                         return new Array('');
                     } else if (stringRaw == '') {
                         return Array('');
                     } else {
-                        var name_email_list = []; // List contains elements in format "xxx" <yyy@zzz>
+                        // Find "display-name" <local-part@domain-part>
+                        var name_email_list = [];
 
-                        // Split by comma
+                        // Split by comma first
                         string_splitted_by_comma = stringRaw.split(',');
                         if (string_splitted_by_comma.length > 0) {
                             // We're going to find all parts in format "xxx" <yyy@zzz>
@@ -110,31 +159,38 @@
                                 }
                             }
 
-                            // We expect that the list containing display name and email address above
+                            // FIXME: We expect that the list containing display name and email address above
                             // is correct so we will remove them from input string to continue extracting
                             // email addresses
-                            var string_to_process = stringRaw;
-                            for (var i = 0; i < name_email_list.length; i++) {
-                                string_to_process = string_to_process.replace(name_email_list[i], '');
+                            var string_to_process = removeStringAndFollowingComma(stringRaw, name_email_list);
+                            // Find <local-part@domain-part>
+                            var enclosed_email_list = string_to_process.match(enclosed_email_pattern);
+                            if (enclosed_email_list == null) {
+                                enclosed_email_list = [];
                             }
-                        
-                            // Extract remaining email addresses which do not go with display name
+
+                            // Remove enclosed email list from input string to continue extracting email address
+                            string_to_process = removeStringAndFollowingComma(string_to_process, enclosed_email_list);
+                            // Find local-part@domain-part
                             var email_list = string_to_process.match(email_pattern);
-                            var email_list_no_duplicate = [];
-                            if (email_list != null) {
-                                for (var i = 0; i < email_list.length; i++) {
-                                    var record = email_list[i].trim();
-                                    if (record.indexOf('<') == 0 && record.lastIndexOf('>') == (record.length - 1)) {
-                                        email_list_no_duplicate.push(record.substring(1, record.length - 1));
-                                    } else {
-                                        email_list_no_duplicate.push(record);
-                                    }
+                            if (email_list == null) {
+                                email_list = [];
+                            }
+
+                            // Remove '<' and '>' in enclosed email
+                            for (var i = 0; i < enclosed_email_list.length; i++) {
+                                var record = enclosed_email_list[i].trim();
+                                if (record.indexOf('<') == 0 && record.lastIndexOf('>') == (record.length - 1)) {
+                                    enclosed_email_list[i] = record.substring(1, record.length - 1);
                                 }
                             }
-                        
-                            // Combine two lists to get the final list
-                            // TODO: With this method, order of email list won't be kept
-                            return name_email_list.concat(email_list_no_duplicate);
+
+                            // Combine three lists to get the final list
+                            // FIXME: With this method, order of email list won't be kept
+                            return name_email_list.concat(enclosed_email_list).concat(email_list);
+                        } else {
+                            // There is something wrong
+                            return Array('');
                         }
                     }
                 }
