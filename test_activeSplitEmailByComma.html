@@ -45,6 +45,7 @@
                     '<test,1@example1.com>,test,2@example2.com,test,3@example3.com',
                     'test,1@example1.com,test,2@example2.com',
                     'test,1@example1.com, test,2@example2.com',
+                    'test,1@example1.com,,,,test,2@example2.com',
                     '""test, 2" <test2@example2.com>" <test1@example1.com>',
                     'test@example.com,""test, 2" <test2@example2.com>" <test1@example1.com>',
                     '',
@@ -143,7 +144,7 @@
                                         for (var j = i + 1; j < string_splitted_by_comma.length; j++) {
                                             var string_to_process = '';
                                             for (var k = i; k <= j; k++) {
-                                                if (string_to_process == '') {
+                                                if (k == i) {
                                                     string_to_process = string_to_process.concat(string_splitted_by_comma[k]);
                                                 } else {
                                                     string_to_process = string_to_process.concat(',').concat(string_splitted_by_comma[k]);
@@ -189,7 +190,7 @@
                                             for (var j = i + 1; j < string_splitted_by_comma.length; j++) {
                                                 var string_to_process = '';
                                                 for (var k = i; k <= j; k++) {
-                                                    if (string_to_process == '') {
+                                                    if (k == i) {
                                                         string_to_process = string_to_process.concat(string_splitted_by_comma[k]);
                                                     } else {
                                                         string_to_process = string_to_process.concat(',').concat(string_splitted_by_comma[k]);
